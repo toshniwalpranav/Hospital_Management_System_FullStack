@@ -13,39 +13,47 @@ import {
   storage,
   users,
 } from "../appwrite.config";
+
 import { parseStringify } from "../utils";
 
 // CREATE APPWRITE USER
 export const createUser = async (user: CreateUserParams) => {
   try {
-    // Create new user -> https://appwrite.io/docs/references/1.5.x/server-nodejs/users#create
-
-    const newuser = await users.create(
+    const newUser = await users.create(
       ID.unique(),
       user.email,
-      undefined, // phone is not unique in Appwrite, so skip it here
+      undefined,
       undefined,
       user.name
     );
-    return newuser;
+
+    return parseStringify(newUser);
   } catch (error: any) {
-    // Check existing user if error code is 409 (conflict)
-    if (error && error.code === 409) {
+    if (error?.code === 409) {
       const existingUser = await users.list([
         Query.equal("email", [user.email]),
       ]);
-      if (existingUser.users[0] && existingUser.users[0].$id) {
-        return existingUser.users[0];
+
+      if (existingUser.users.length > 0) {
+        return parseStringify(existingUser.users[0]);
       }
-      // Instead of throwing, return a user-friendly error object
+
       return {
         error: true,
         message:
           "Email already exists, but user record is invalid. Please contact support or use the 'Returning Patient?' button.",
       };
     }
-    console.error("An error occurred while creating a new user:", error);
-    throw error;
+
+    console.error(
+      "An error occurred while creating a new user:",
+      error instanceof Error ? error.message : String(error)
+    );
+
+    return {
+      error: true,
+      message: "Failed to create user.",
+    };
   }
 };
 
@@ -58,39 +66,54 @@ export const getUser = async (userId: string) => {
   } catch (error) {
     console.error(
       "An error occurred while retrieving the user details:",
-      error
+      error instanceof Error ? error.message : String(error)
     );
+
+    return null;
   }
 };
 
 // REGISTER PATIENT
 export const registerPatient = async ({
   identificationDocument,
+  $id: _id,
   ...patient
 }: RegisterUserParams) => {
   try {
-    // Upload file ->  // https://appwrite.io/docs/references/cloud/client-web/storage#createFile
     let file;
-    let publicUrl = null;
+    let publicUrl: string | null = null;
+
     if (identificationDocument) {
       const blobEntry = identificationDocument.get("blobFile");
       const fileName = identificationDocument.get("fileName") as string;
-      if (blobEntry && blobEntry instanceof Blob) {
-        const inputFile = InputFile.fromBuffer(blobEntry, fileName);
-        file = await storage.createFile(BUCKET_ID!, ID.unique(), inputFile);
+
+      if (blobEntry instanceof Blob) {
+        const arrayBuffer = await blobEntry.arrayBuffer();
+
+        const inputFile = InputFile.fromBuffer(
+          Buffer.from(arrayBuffer),
+          fileName
+        );
+
+        file = await storage.createFile(
+          BUCKET_ID!,
+          ID.unique(),
+          inputFile
+        );
+
         if (file?.$id) {
-          publicUrl = `${ENDPOINT}/storage/buckets/${BUCKET_ID}/files/${file.$id}/view?project=${NEXT_PUBLIC_PROJECT_ID}`;
+          publicUrl =
+            `${ENDPOINT}/storage/buckets/${BUCKET_ID}/files/${file.$id}/view?project=${NEXT_PUBLIC_PROJECT_ID}`;
         }
       }
     }
 
-    // Create new patient document -> https://appwrite.io/docs/references/cloud/server-nodejs/databases#createDocument
     const newPatient = await databases.createDocument(
       NEXT_PUBLIC_DATABASE_ID!,
       NEXT_PUBLIC_PATIENT_COLLECTION_ID!,
       ID.unique(),
       {
-        identificationDocumentId: file?.$id ? file.$id : null,
+        identificationDocumentId: file?.$id ?? null,
         identificationDocumentUrl: publicUrl,
         ...patient,
       }
@@ -98,7 +121,12 @@ export const registerPatient = async ({
 
     return parseStringify(newPatient);
   } catch (error) {
-    console.error("An error occurred while creating a new patient:", error);
+    console.error(
+      "An error occurred while creating a new patient:",
+      error instanceof Error ? error.message : String(error)
+    );
+
+    return null;
   }
 };
 
@@ -114,36 +142,45 @@ export const getPatient = async (userId: string) => {
         Query.limit(1),
       ]
     );
-    return patients.documents.length > 0
-      ? parseStringify(patients.documents[0])
-      : null;
+
+    if (patients.documents.length === 0) {
+      return null;
+    }
+
+    return parseStringify(patients.documents[0]);
   } catch (error) {
     console.error(
       "An error occurred while retrieving the patient details:",
-      error
+      error instanceof Error ? error.message : String(error)
     );
+
     return null;
   }
 };
 
-// --- Utility functions for returning patient logic ---
-
+// GET USER BY EMAIL
 export const getUserByEmail = async (email: string) => {
   try {
-    const usersList = await users.list([Query.equal("email", [email])]);
-    if (usersList.users.length > 0) {
-      return parseStringify(usersList.users[0]);
+    const usersList = await users.list([
+      Query.equal("email", [email]),
+    ]);
+
+    if (usersList.users.length === 0) {
+      return null;
     }
-    return null;
+
+    return parseStringify(usersList.users[0]);
   } catch (error) {
     console.error(
       "An error occurred while retrieving the user by email:",
-      error
+      error instanceof Error ? error.message : String(error)
     );
+
     return null;
   }
 };
 
+// GET PATIENT BY EMAIL
 export const getPatientByEmail = async (email: string) => {
   try {
     const patients = await databases.listDocuments(
@@ -155,19 +192,23 @@ export const getPatientByEmail = async (email: string) => {
         Query.limit(1),
       ]
     );
-    if (patients.documents.length > 0) {
-      return parseStringify(patients.documents[0]);
+
+    if (patients.documents.length === 0) {
+      return null;
     }
-    return null;
+
+    return parseStringify(patients.documents[0]);
   } catch (error) {
     console.error(
       "An error occurred while retrieving the patient by email:",
-      error
+      error instanceof Error ? error.message : String(error)
     );
+
     return null;
   }
 };
 
+// UPDATE PATIENT USER ID
 export const updatePatientUserId = async (
   patientId: string,
   userId: string
@@ -177,11 +218,18 @@ export const updatePatientUserId = async (
       NEXT_PUBLIC_DATABASE_ID!,
       NEXT_PUBLIC_PATIENT_COLLECTION_ID!,
       patientId,
-      { userId }
+      {
+        userId,
+      }
     );
+
     return parseStringify(updated);
   } catch (error) {
-    console.error("An error occurred while updating patient userId:", error);
+    console.error(
+      "An error occurred while updating patient userId:",
+      error instanceof Error ? error.message : String(error)
+    );
+
     return null;
   }
 };

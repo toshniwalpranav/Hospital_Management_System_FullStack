@@ -67,7 +67,9 @@ export const getRecentAppointmentList = async () => {
       cancelledCount: 0,
     };
 
-    const counts = (appointments.documents as Appointment[]).reduce(
+    const counts = (
+      appointments.documents as unknown as Appointment[]
+    ).reduce(
       (acc, appointment) => {
         switch (appointment.status) {
           case "scheduled":
