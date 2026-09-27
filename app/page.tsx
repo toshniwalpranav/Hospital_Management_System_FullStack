@@ -5,6 +5,7 @@ import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
+import { signIn } from "next-auth/react";
 
 import { PatientForm } from "@/components/forms/PatientForm";
 import { PasskeyModal } from "@/components/PasskeyModal";
@@ -102,6 +103,15 @@ const Home = ({ searchParams }: SearchParamProps) => {
               disabled={isPending}
             >
               {isPending ? "Continuing..." : "Returning Patient?"}
+            </Button>
+
+            <Button
+              variant="outline"
+              className="shad-primary-btn w-full"
+              type="button"
+              onClick={() => signIn("google")}
+            >
+              Continue with Google
             </Button>
           </div>
 

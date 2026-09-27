@@ -10,6 +10,8 @@ const Register = async ({ params: { userId } }: SearchParamProps) => {
   const user = await getUser(userId);
   const patient = await getPatient(userId);
 
+  console.log("PATIENT FROM getPatient:", patient);
+
   // Prefer patient.phone over user.phone if available
   let mergedUser = user;
   if (patient && patient.phone && patient.phone !== "") {

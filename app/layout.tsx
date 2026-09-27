@@ -4,6 +4,7 @@ import { Plus_Jakarta_Sans as FontSans } from "next/font/google";
 import { ThemeProvider } from "next-themes";
 
 import { LoadingProvider } from "@/components/GlobalLoadingProvider";
+import SessionProviderWrapper from "@/components/SessionProviderWrapper";
 import { cn } from "@/lib/utils";
 
 const fontSans = FontSans({
@@ -88,7 +89,9 @@ export default function RootLayout({
         suppressHydrationWarning
       >
         <ThemeProvider attribute="class" defaultTheme="dark">
-          <LoadingProvider>{children}</LoadingProvider>
+          <SessionProviderWrapper>
+            <LoadingProvider>{children}</LoadingProvider>
+          </SessionProviderWrapper>
         </ThemeProvider>
       </body>
     </html>

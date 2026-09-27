@@ -1,4 +1,3 @@
-/* eslint-disable @next/next/no-img-element */
 "use client";
 
 import { ColumnDef } from "@tanstack/react-table";
@@ -9,7 +8,6 @@ import { formatDateTime } from "@/lib/utils";
 import { Appointment } from "@/types/appwrite.types";
 
 import { AppointmentModal } from "../AppointmentModal";
-import { PatientModal } from "../PatientModal";
 import { StatusBadge } from "../StatusBadge";
 
 interface ColumnsProps {
@@ -30,38 +28,65 @@ export const Columns = ({
   {
     header: "#",
     cell: ({ row }) => {
-      return <p className="text-14-medium ">{row.index + 1}</p>;
+      return <p className="text-14-medium">{row.index + 1}</p>;
     },
   },
+
+  // =========================
+  // PATIENT
+  // =========================
   {
-    accessorKey: "patient",
+    id: "patient",
     header: "Patient",
+
     cell: ({ row }) => {
-      const appointment = row.original;
+      const appointment = row.original as any;
+
+      console.log("PATIENT DATA:", appointment.patient);
+
+      const patient = Array.isArray(appointment.patient)
+        ? appointment.patient[0]
+        : appointment.patient;
+
+      if (!patient) {
+        return (
+          <p className="text-14-medium text-gray-500">
+            Patient not found
+          </p>
+        );
+      }
+
+      const patientId = patient.$id;
+      const patientName = patient.name;
 
       return (
-        <div className="text-14-medium cursor-pointer">
-          <div
-            onClick={() => openModal(appointment.patient.$id)}
-            className="inline-block rounded-md p-3 text-white transition-colors duration-200 hover:bg-gray-800 hover:text-gray-300"
+        <div className="text-14-medium">
+          <button
+            type="button"
+            onClick={() => {
+              if (patientId) {
+                openModal(patientId);
+              }
+            }}
+            className="cursor-pointer rounded-md p-3 text-left text-dark-700 transition-colors duration-200 hover:bg-gray-800 hover:text-white"
           >
-            <p>{appointment.patient.name}</p>
-          </div>
-          {isModalOpen && selectedPatientId === appointment.patient.$id && (
-            <PatientModal
-              patientId={selectedPatientId}
-              closeModal={closeModal}
-            />
-          )}
+            {patientName || "Unknown Patient"}
+          </button>
         </div>
       );
     },
   },
+
+  // =========================
+  // STATUS
+  // =========================
   {
     accessorKey: "status",
     header: "Status",
+
     cell: ({ row }) => {
       const appointment = row.original;
+
       return (
         <div className="min-w-[115px]">
           <StatusBadge status={appointment.status} />
@@ -69,11 +94,17 @@ export const Columns = ({
       );
     },
   },
+
+  // =========================
+  // APPOINTMENT DATE/TIME
+  // =========================
   {
     accessorKey: "schedule",
     header: "Appointment",
+
     cell: ({ row }) => {
       const appointment = row.original;
+
       return (
         <p className="text-14-regular min-w-[100px]">
           {formatDateTime(appointment.schedule).dateTime}
@@ -81,9 +112,14 @@ export const Columns = ({
       );
     },
   },
+
+  // =========================
+  // DOCTOR
+  // =========================
   {
     accessorKey: "primaryPhysician",
     header: "Doctor",
+
     cell: ({ row }) => {
       const appointment = row.original;
 
@@ -93,28 +129,47 @@ export const Columns = ({
 
       return (
         <div className="flex items-center gap-3">
-          <img
-            src={doctor?.image!}
-            alt="doctor"
-            width={100}
-            height="auto"
-            className="size-8"
-          />
-          <p className="whitespace-nowrap">Dr. {doctor?.name}</p>
+          {doctor?.image && (
+            <img
+              src={doctor.image}
+              alt="doctor"
+              width={100}
+              height={100}
+              className="size-8"
+            />
+          )}
+
+          <p className="whitespace-nowrap">
+            Dr. {doctor?.name || appointment.primaryPhysician}
+          </p>
         </div>
       );
     },
   },
+
+  // =========================
+  // ACTIONS
+  // =========================
   {
     id: "actions",
+
     header: () => <div className="pl-4">Actions</div>,
+
     cell: ({ row }) => {
-      const appointment = row.original;
+      const appointment = row.original as any;
+
+      const patient = Array.isArray(appointment.patient)
+        ? appointment.patient[0]
+        : appointment.patient;
+
+      if (!patient) {
+        return null;
+      }
 
       return (
         <div className="flex gap-1">
           <AppointmentModal
-            patientId={appointment.patient.$id}
+            patientId={patient.$id}
             userId={appointment.userId}
             appointment={appointment}
             type="schedule"
@@ -122,8 +177,9 @@ export const Columns = ({
             description="Please confirm the following details to schedule."
             reloadAppointments={reloadAppointments}
           />
+
           <AppointmentModal
-            patientId={appointment.patient.$id}
+            patientId={patient.$id}
             userId={appointment.userId}
             appointment={appointment}
             type="cancel"
