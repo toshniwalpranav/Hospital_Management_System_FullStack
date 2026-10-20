@@ -24,16 +24,32 @@ jobs:
           node-version: '22.x'
 
       - name: npm install, build, and test
+        env:
+          NEXT_PUBLIC_ENDPOINT: ${{ secrets.NEXT_PUBLIC_ENDPOINT }}
+          NEXT_PUBLIC_PROJECT_ID: ${{ secrets.NEXT_PUBLIC_PROJECT_ID }}
+          NEXT_PUBLIC_API_KEY: ${{ secrets.NEXT_PUBLIC_API_KEY }}
+          NEXT_PUBLIC_DATABASE_ID: ${{ secrets.NEXT_PUBLIC_DATABASE_ID }}
+          NEXT_PUBLIC_PATIENT_COLLECTION_ID: ${{ secrets.NEXT_PUBLIC_PATIENT_COLLECTION_ID }}
+          NEXT_PUBLIC_DOCTOR_COLLECTION_ID: ${{ secrets.NEXT_PUBLIC_DOCTOR_COLLECTION_ID }}
+          NEXT_PUBLIC_APPOINTMENT_COLLECTION_ID: ${{ secrets.NEXT_PUBLIC_APPOINTMENT_COLLECTION_ID }}
+          NEXT_PUBLIC_BUCKET_ID: ${{ secrets.NEXT_PUBLIC_BUCKET_ID }}
+          NEXT_PUBLIC_ADMIN_PASSKEY: ${{ secrets.NEXT_PUBLIC_ADMIN_PASSKEY }}
+          GMAIL_USER: ${{ secrets.GMAIL_USER }}
+          GMAIL_REFRESH_TOKEN: ${{ secrets.GMAIL_REFRESH_TOKEN }}
+          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+          GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+          NEXTAUTH_SECRET: ${{ secrets.NEXTAUTH_SECRET }}
+          NEXTAUTH_URL: ${{ secrets.NEXTAUTH_URL }}
         run: |
           npm install
           npm run build --if-present
           npm run test --if-present
-
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
         with:
           name: node-app
           path: .
+          include-hidden-files: true
 
   deploy:
     runs-on: ubuntu-latest
@@ -62,4 +78,3 @@ jobs:
           app-name: 'CarePulse'
           slot-name: 'Production'
           package: .
-          
