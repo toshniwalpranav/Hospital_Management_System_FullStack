@@ -1,23 +1,16 @@
 import { google } from "googleapis";
-import fs from "fs";
-import path from "path";
 
-const credentialsPath = path.join(
-  process.cwd(),
-  "credentials",
-  "credentials.json"
-);
+// Google OAuth settings now come from environment variables (no credentials.json needed)
+const clientId = process.env.GOOGLE_CLIENT_ID;
+const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
 
-const credentials = JSON.parse(
-  fs.readFileSync(credentialsPath, "utf-8")
-);
-
-const { client_id, client_secret } = credentials.web;
+// Redirect address: localhost on your PC, your Azure address when hosted
+const baseUrl = process.env.NEXTAUTH_URL || "http://localhost:3000";
 
 export const oauth2Client = new google.auth.OAuth2(
-  client_id,
-  client_secret,
-  "http://localhost:3000/api/gmail/callback"
+  clientId,
+  clientSecret,
+  `${baseUrl}/api/gmail/callback`
 );
 
 oauth2Client.setCredentials({

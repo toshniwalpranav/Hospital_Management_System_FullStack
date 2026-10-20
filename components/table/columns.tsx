@@ -1,8 +1,10 @@
 "use client";
 
 import { ColumnDef } from "@tanstack/react-table";
+import Link from "next/link";
 import React from "react";
 
+import { Button } from "@/components/ui/button";
 import { Doctors } from "@/constants";
 import { formatDateTime } from "@/lib/utils";
 import { Appointment } from "@/types/appwrite.types";
@@ -41,8 +43,6 @@ export const Columns = ({
 
     cell: ({ row }) => {
       const appointment = row.original as any;
-
-      console.log("PATIENT DATA:", appointment.patient);
 
       const patient = Array.isArray(appointment.patient)
         ? appointment.patient[0]
@@ -187,6 +187,15 @@ export const Columns = ({
             description="Are you sure you want to cancel your appointment?"
             reloadAppointments={reloadAppointments}
           />
+
+          <Link href={`/admin/patient-history/${appointment.userId}`}>
+            <Button
+              variant="outline"
+              className="rounded-lg border border-blue-400 text-blue-400 hover:bg-blue-400/10"
+            >
+              History
+            </Button>
+          </Link>
         </div>
       );
     },

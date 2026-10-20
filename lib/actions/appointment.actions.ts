@@ -15,6 +15,7 @@ import {
 } from "../appwrite.config";
 
 import { formatDateTime, parseStringify } from "../utils";
+import { saveHistory } from "./history.actions";
 
 // CREATE APPOINTMENT
 export const createAppointment = async (
@@ -250,6 +251,9 @@ export const updateAppointment = async ({
       "APPOINTMENT: Updating appointment:",
       appointmentId
     );
+
+    // SAVE OLD VERSION TO HISTORY BEFORE CHANGING IT
+    await saveHistory(appointmentId, type);
 
     const updatedAppointment = await databases.updateDocument(
       NEXT_PUBLIC_DATABASE_ID!,
